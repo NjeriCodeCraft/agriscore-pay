@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 const INITIAL = {
   fullName: '', phone: '', farmId: '',
@@ -238,9 +238,19 @@ function LoadingScreen() {
 }
 
 function ResultScreen({ result, name, onReset }) {
-  const color = result.score >= 700 ? 'var(--green-mid)' : result.score >= 600 ? 'var(--earth)' : 'var(--danger)'
-  const label = result.score >= 700 ? 'Excellent' : result.score >= 600 ? 'Good' : result.score >= 500 ? 'Fair' : 'Poor'
-  const bg = result.score >= 700 ? 'var(--green-pale)' : result.score >= 600 ? 'var(--earth-light)' : '#fee2e2'
+  // Save score to localStorage so dashboard updates
+  useEffect(() => {
+    if (result.approved) {
+      const raw = localStorage.getItem('agriscore_user')
+      if (!raw) return
+      const user = JSON.parse(raw)
+      user.creditScore = result.score
+      user.creditLimit = result.limit
+      user.usedCredit = 0
+      user.riskLevel = result.risk
+      localStorage.setItem('agriscore_user', JSON.stringify(user))
+    }
+  }, [])
 
   return (
     <div>

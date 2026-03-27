@@ -1,36 +1,6 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
-const LOANS = [
-  {
-    id: 'LN-001', item: 'NPK Fertilizer 50kg x 4', amount: 1200,
-    disbursed: '2025-03-05', due: '2025-11-30',
-    payments: [],
-    status: 'active',
-    harvestEstimate: 'November 2025',
-  },
-  {
-    id: 'LN-002', item: 'Maize Hybrid Seeds 10kg', amount: 800,
-    disbursed: '2025-03-12', due: '2025-11-30',
-    payments: [],
-    status: 'active',
-    harvestEstimate: 'November 2025',
-  },
-  {
-    id: 'LN-003', item: 'Herbicide 5L x 2', amount: 1200,
-    disbursed: '2025-01-10', due: '2025-06-30',
-    payments: [{ date: '2025-06-28', amount: 1200, ref: 'ISW-TXN-88421' }],
-    status: 'repaid',
-    harvestEstimate: 'June 2025',
-  },
-  {
-    id: 'LN-004', item: 'Drip Irrigation Kit', amount: 1200,
-    disbursed: '2024-09-01', due: '2025-01-31',
-    payments: [{ date: '2025-01-15', amount: 600, ref: 'ISW-TXN-71002' }, { date: '2025-01-29', amount: 600, ref: 'ISW-TXN-71098' }],
-    status: 'repaid',
-    harvestEstimate: 'January 2025',
-  },
-]
 
 function daysUntil(dateStr) {
   const diff = new Date(dateStr) - new Date()
@@ -38,12 +8,20 @@ function daysUntil(dateStr) {
 }
 
 export default function Repayment() {
+  const [loans, setLoans] = useState([])
   const [activeTab, setActiveTab] = useState('active')
   const [payingId, setPayingId] = useState(null)
   const [paidIds, setPaidIds] = useState([])
 
-  const active = LOANS.filter(l => l.status === 'active' && !paidIds.includes(l.id))
-  const repaid = LOANS.filter(l => l.status === 'repaid' || paidIds.includes(l.id))
+  useEffect(() => {
+    const raw = localStorage.getItem('agriscore_user')
+    if (!raw) return
+    const u = JSON.parse(raw)
+    setLoans(u.activeLoans || [])
+  }, [])
+
+  const active = loans.filter(l => l.status === 'active' && !paidIds.includes(l.id))
+  const repaid = loans.filter(l => l.status === 'repaid' || paidIds.includes(l.id))
   const totalOwed = active.reduce((s, l) => s + l.amount, 0)
 
   async function handleRepay(loan) {
@@ -84,9 +62,9 @@ export default function Repayment() {
         <div className="stat-card">
           <div className="label">Next Due Date</div>
           <div className="value" style={{ fontSize: 20, paddingTop: 6 }}>
-            {active.length ? 'Nov 30, 2025' : '—'}
+            {active.length ? new Date(active[0].due).toLocaleDateString('en-NG', {year:'numeric', month:'short', day:'numeric'}) : '—'}
           </div>
-          <div className="sub">{active.length ? `${daysUntil('2025-11-30')} days away` : 'No pending loans'}</div>
+          <div className="sub">{active.length ? `${daysUntil(active[0].due)} days away` : 'No pending loans'}</div>
         </div>
       </div>
 
