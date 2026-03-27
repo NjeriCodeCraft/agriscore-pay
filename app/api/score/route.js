@@ -1,43 +1,47 @@
-// app/api/score/route.js
-// This is where your friend's ML model connects.
-// Replace the body of POST with a call to their model endpoint.
+// app/api/interswitch/initiate/route.js
+// Interswitch Quickteller / Webpay integration
+// Docs: https://developer.interswitchgroup.com/docs/
 
 export async function POST(request) {
-  const data = await request.json()
+  const { amount, loanId, farmerId, email, description } = await request.json()
 
-  // ─── OPTION A: Call your friend's ML model directly ───────────────────────
-  // Uncomment and replace URL when friend deploys their model:
-  //
-  // const mlResponse = await fetch('https://your-friends-model.vercel.app/predict', {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify(data),
-  // })
-  // const result = await mlResponse.json()
-  // return Response.json(result)
+  // ─── Interswitch credentials (set in .env.local) ──────────────────────────
+  const MERCHANT_CODE = process.env.INTERSWITCH_MERCHANT_CODE
+  const PAY_ITEM_ID = process.env.INTERSWITCH_PAY_ITEM_ID
+  const CLIENT_ID = process.env.INTERSWITCH_CLIENT_ID
+  const CLIENT_SECRET = process.env.INTERSWITCH_CLIENT_SECRET
 
-  // ─── OPTION B: Fallback scoring logic (active for now) ────────────────────
-  const {
-    farmSize = 0,
-    yearsfarming = 0,
-    lastYieldKg = 0,
-    existingLoans = 'no',
-    irrigated = 'no',
-    soilType = '',
-  } = data
+  // Amount must be in kobo (multiply naira by 100)
+  const amountKobo = Number(amount) * 100
 
-  let score = 400
-  score += Math.min(Number(farmSize) * 8, 120)
-  score += Math.min(Number(yearsfarming) * 12, 100)
-  score += Math.min(Number(lastYieldKg) * 0.05, 80)
-  if (existingLoans === 'no') score += 60
-  if (irrigated === 'yes') score += 40
-  if (soilType === 'loamy') score += 30
-  score = Math.min(Math.round(score), 850)
+  // Generate unique transaction reference
+  const transactionRef = `AGRI-${loanId}-${Date.now()}`
 
-  const limit = score > 700 ? 10000 : score > 600 ? 6000 : score > 500 ? 3000 : 1000
-  const risk = score > 700 ? 'Low' : score > 600 ? 'Medium' : 'High'
-  const approved = score >= 500
+  // ─── For sandbox testing, return mock response ────────────────────────────
+  if (process.env.NODE_ENV !== 'production') {
+    return Response.json({
+      transactionRef,
+      redirectUrl: `https://sandbox.interswitchng.com/pay?merchantCode=${MERCHANT_CODE}&payItemID=${PAY_ITEM_ID}&amount=${amountKobo}&transactionreference=${transactionRef}&cust_email=${email}`,
+      amountKobo,
+    })
+  }
 
-  return Response.json({ score, limit, risk, approved })
+  // ─── Production: Call Interswitch to get payment URL ──────────────────────
+  // Reference: https://developer.interswitchgroup.com/docs/webpay
+  const payload = {
+    merchantCode: MERCHANT_CODE,
+    payableCode: PAY_ITEM_ID,
+    amount: amountKobo,
+    transactionReference: transactionRef,
+    customerEmail: email,
+    description: description || `AgriScore Loan Repayment: ${loanId}`,
+    returnUrl: `${process.env.NEXT_PUBLIC_APP_URL}/repayment?ref=${transactionRef}`,
+  }
+
+  // Return the redirect URL for client to open
+  return Response.json({
+    transactionRef,
+    redirectUrl: `https://webpay.interswitchng.com/pay?${new URLSearchParams(payload)}`,
+    amountKobo,
+  })
 }

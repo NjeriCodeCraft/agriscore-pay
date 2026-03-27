@@ -1,43 +1,31 @@
-// app/api/score/route.js
-// This is where your friend's ML model connects.
-// Replace the body of POST with a call to their model endpoint.
+// app/api/interswitch/webhook/route.js
+// Interswitch posts payment confirmations here
+
+import crypto from 'crypto'
 
 export async function POST(request) {
-  const data = await request.json()
+  const body = await request.text()
+  const signature = request.headers.get('x-interswitch-signature')
 
-  // ─── OPTION A: Call your friend's ML model directly ───────────────────────
-  // Uncomment and replace URL when friend deploys their model:
-  //
-  // const mlResponse = await fetch('https://your-friends-model.vercel.app/predict', {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify(data),
-  // })
-  // const result = await mlResponse.json()
-  // return Response.json(result)
+  // Verify webhook signature
+  const expectedSig = crypto
+    .createHmac('sha256', process.env.INTERSWITCH_CLIENT_SECRET || '')
+    .update(body)
+    .digest('hex')
 
-  // ─── OPTION B: Fallback scoring logic (active for now) ────────────────────
-  const {
-    farmSize = 0,
-    yearsfarming = 0,
-    lastYieldKg = 0,
-    existingLoans = 'no',
-    irrigated = 'no',
-    soilType = '',
-  } = data
+  if (signature !== expectedSig) {
+    return Response.json({ error: 'Invalid signature' }, { status: 401 })
+  }
 
-  let score = 400
-  score += Math.min(Number(farmSize) * 8, 120)
-  score += Math.min(Number(yearsfarming) * 12, 100)
-  score += Math.min(Number(lastYieldKg) * 0.05, 80)
-  if (existingLoans === 'no') score += 60
-  if (irrigated === 'yes') score += 40
-  if (soilType === 'loamy') score += 30
-  score = Math.min(Math.round(score), 850)
+  const event = JSON.parse(body)
+  const { transactionReference, responseCode, amount } = event
 
-  const limit = score > 700 ? 10000 : score > 600 ? 6000 : score > 500 ? 3000 : 1000
-  const risk = score > 700 ? 'Low' : score > 600 ? 'Medium' : 'High'
-  const approved = score >= 500
+  if (responseCode === '00') {
+    // Payment successful — update your DB here
+    // e.g., await db.loans.markRepaid(transactionReference, amount / 100)
+    // e.g., await db.farmers.updateCreditScore(farmerId, +15)
+    console.log('Payment confirmed:', transactionReference, amount / 100)
+  }
 
-  return Response.json({ score, limit, risk, approved })
+  return Response.json({ received: true })
 }
