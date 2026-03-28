@@ -269,17 +269,17 @@ export default function AuthPage() {
                   </div>
                   <div className="field">
                     <label>Phone Number *</label>
-                    <input name="phone" placeholder="0712 345 678" value={form.phone} onChange={handleChange} />
+                    <input name="phone" placeholder="+234 801 234 5678" value={form.phone} onChange={handleChange} />
                   </div>
                 </div>
                 <div className="field">
                   <label>Email (optional)</label>
-                  <input name="email" type="email" placeholder="jane@example.com" value={form.email} onChange={handleChange} />
+                  <input name="email" type="email" placeholder="test@gmail.com" value={form.email} onChange={handleChange} />
                 </div>
                 <div className="field-row">
                   <div className="field">
                     <label>Location / County *</label>
-                    <input name="location" placeholder="Nakuru" value={form.location} onChange={handleChange} />
+                    <input name="location" placeholder="Ogun State" value={form.location} onChange={handleChange} />
                   </div>
                   <div className="field">
                     <label>Main Crop *</label>
@@ -309,7 +309,7 @@ export default function AuthPage() {
               <form onSubmit={handleLogin}>
                 <div className="field">
                   <label>Phone Number</label>
-                  <input name="phone" placeholder="0712 345 678" value={form.phone} onChange={handleChange} />
+                  <input name="phone" placeholder="+234 801 234 5678" value={form.phone} onChange={handleChange} />
                 </div>
                 <div className="field">
                   <label>Password</label>

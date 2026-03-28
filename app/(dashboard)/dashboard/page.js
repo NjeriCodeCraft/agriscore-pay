@@ -76,7 +76,7 @@ setFarmer({
                 ? 'Your score qualifies you for premium crop inputs on credit.'
                 : 'Keep repaying on time to improve your score.'}
             </div>
-            <a href="/dashboard/apply" className="btn btn-outline" style={{ borderColor: 'rgba(255,255,255,0.4)', color: 'white', fontSize: 13 }}>
+            <a href="/apply" className="btn btn-outline" style={{ borderColor: 'rgba(255,255,255,0.4)', color: 'white', fontSize: 13 }}>
               Apply for More Credit →
             </a>
           </div>
@@ -93,7 +93,7 @@ setFarmer({
               <div className="progress-fill" style={{ width: `${Math.min((farmer.usedCredit / farmer.creditLimit) * 100, 100)}%` }} />
             </div>
             <div style={{ fontSize: 12, color: 'var(--gray-mid)', marginTop: 6 }}>
-              {Math.round((farmer.usedCredit / farmer.creditLimit) * 100)}% used · {farmer.riskLevel === 'low' ? 'Healthy range' : 'Watch your usage'}
+              {farmer.creditLimit > 0 ? Math.round((farmer.usedCredit / farmer.creditLimit) * 100) : 0}% used · {farmer.riskLevel === 'low' ? 'Healthy range' : 'Watch your usage'}
             </div>
           </div>
           <div style={{ marginTop: 20 }}>

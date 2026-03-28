@@ -238,7 +238,6 @@ function LoadingScreen() {
 }
 
 function ResultScreen({ result, name, onReset }) {
-  // Save score to localStorage so dashboard updates
   useEffect(() => {
     if (result.approved) {
       const raw = localStorage.getItem('agriscore_user')
@@ -251,6 +250,10 @@ function ResultScreen({ result, name, onReset }) {
       localStorage.setItem('agriscore_user', JSON.stringify(user))
     }
   }, [])
+
+  const color = result.score >= 700 ? 'var(--green-mid)' : result.score >= 600 ? 'var(--earth)' : 'var(--danger)'
+  const label = result.score >= 700 ? 'Excellent' : result.score >= 600 ? 'Good' : result.score >= 500 ? 'Fair' : 'Poor'
+  const bg = result.score >= 700 ? 'var(--green-pale)' : result.score >= 600 ? 'var(--earth-light)' : '#fee2e2'
 
   return (
     <div>
