@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 const PRODUCTS = [
   { id: 1, name: 'NPK Fertilizer 50kg', category: 'Fertilizer', emoji: '🧪', price: 280, unit: 'per bag', desc: 'Balanced 15-15-15 NPK blend for high-yield crops', vendor: 'AgroSupply Co.' },
@@ -14,14 +14,24 @@ const PRODUCTS = [
 ]
 
 const CATEGORIES = ['All', 'Seeds', 'Fertilizer', 'Herbicide', 'Pesticide', 'Equipment']
-const FARMER_CREDIT = 5300 // available credit
 
 export default function Marketplace() {
+  const [creditLimit, setCreditLimit] = useState(0)
+  const [usedCredit, setUsedCredit] = useState(0)
   const [cat, setCat] = useState('All')
   const [cart, setCart] = useState({})
   const [paying, setPaying] = useState(false)
   const [paid, setPaid] = useState(false)
 
+  useEffect(() => {
+    const raw = localStorage.getItem('agriscore_user')
+    if (!raw) return
+    const u = JSON.parse(raw)
+    setCreditLimit(u.creditLimit || 0)
+    setUsedCredit(u.usedCredit || 0)
+  }, [])
+
+  const FARMER_CREDIT = creditLimit - usedCredit
   const filtered = cat === 'All' ? PRODUCTS : PRODUCTS.filter(p => p.category === cat)
   const cartItems = Object.entries(cart).filter(([, qty]) => qty > 0).map(([id, qty]) => ({ ...PRODUCTS.find(p => p.id === Number(id)), qty }))
   const total = cartItems.reduce((sum, i) => sum + i.price * i.qty, 0)
@@ -29,23 +39,31 @@ export default function Marketplace() {
   function addToCart(id) { setCart(p => ({ ...p, [id]: (p[id] || 0) + 1 })) }
   function removeFromCart(id) { setCart(p => ({ ...p, [id]: Math.max((p[id] || 0) - 1, 0) })) }
 
-  async function handlePayment() {
+ async function handlePayment() {
     setPaying(true)
-    // Interswitch payment integration
-    // In production, call your backend to create a payment reference
-    // then redirect to Interswitch payment gateway
-    try {
-      // Simulated Interswitch flow:
-      // 1. POST /api/interswitch/initiate → get paymentReference
-      // 2. Redirect to Interswitch hosted page
-      // 3. Interswitch webhooks back with confirmation
-      await new Promise(r => setTimeout(r, 2000))
-      setPaid(true)
-    } catch {
-      alert('Payment failed. Please try again.')
-    } finally {
-      setPaying(false)
+    await new Promise(r => setTimeout(r, 2000))
+    
+    // Save loan to localStorage
+    const raw = localStorage.getItem('agriscore_user')
+    if (raw) {
+      const u = JSON.parse(raw)
+      const newLoan = {
+        id: `LN-${Date.now()}`,
+        item: cartItems.map(i => `${i.name} x${i.qty}`).join(', '),
+        amount: total,
+        disbursed: new Date().toISOString().split('T')[0],
+        due: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        status: 'active',
+        harvestEstimate: 'November 2026',
+        payments: [],
+      }
+      u.activeLoans = [...(u.activeLoans || []), newLoan]
+      u.usedCredit = (u.usedCredit || 0) + total
+      localStorage.setItem('agriscore_user', JSON.stringify(u))
     }
+    
+    setPaid(true)
+    setPaying(false)
   }
 
   if (paid) return (
