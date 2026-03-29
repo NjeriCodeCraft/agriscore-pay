@@ -9,12 +9,9 @@ const INITIAL = {
   requestedAmount: '',
 }
 
-// Simulates your friend's ML scoring model API
 async function callMLModel(formData) {
-  // Replace this URL with your friend's actual ML endpoint
-  // e.g., 'https://your-ml-model.vercel.app/api/score'
   try {
-    const res = await fetch('/api/score', {
+    const res = await fetch('https://agriscore-api.onrender.com/predict', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(formData),
@@ -22,7 +19,6 @@ async function callMLModel(formData) {
     if (!res.ok) throw new Error('ML API failed')
     return await res.json()
   } catch {
-    // Fallback scoring while ML model is being integrated
     return computeFallbackScore(formData)
   }
 }
